@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRV · Préstamo de Bicicletas · Caja Los Andes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c232d;
+    --border: #2a323d;
+    --orange: #f97316;
+    --teal: #00d4aa;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --danger: #f85149;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Nunito', sans-serif;
+    padding: 24px;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom: 24px;
+  }
+  header h1{
+    font-size: 22px;
+    font-weight: 800;
+    margin:0;
+  }
+  header h1 span{ color: var(--orange); }
+  .status{
+    font-size: 13px;
+    color: var(--text-dim);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 8px var(--teal);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;} 50%{opacity:.35;}
+  }
+  .summary{
+    display:flex;
+    gap:16px;
+    margin-bottom: 24px;
+    flex-wrap:wrap;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px 20px;
+    min-width:150px;
+    flex:1;
+  }
+  .card .num{
+    font-size:28px;
+    font-weight:800;
+  }
+  .card .label{
+    font-size:13px;
+    color:var(--text-dim);
+    margin-top:4px;
+  }
+  .card.activos .num{ color: var(--orange); }
+  .card.devueltos .num{ color: var(--teal); }
+
+  section{
+    margin-bottom: 32px;
+  }
+  section h2{
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    margin-bottom: 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  section h2 .badge{
+    background:var(--panel-2);
+    border-radius:999px;
+    padding:2px 10px;
+    font-size:12px;
+    color:var(--text);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .record{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    transition: transform .15s ease;
+  }
+  .record.activo{
+    border-left: 3px solid var(--orange);
+  }
+  .record.devuelto{
+    border-left: 3px solid var(--teal);
+    opacity: 0.85;
+  }
+  .record .nombre{
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .record .meta{
+    font-size: 13px;
+    color: var(--text-dim);
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .record .meta b{ color: var(--text); }
+  .record .bici-tag{
+    display:inline-block;
+    background: rgba(249,115,22,0.15);
+    color: var(--orange);
+    font-weight:700;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    width: fit-content;
+  }
+  .record.devuelto .bici-tag{
+    background: rgba(0,212,170,0.15);
+    color: var(--teal);
+  }
+  button.marcar{
+    margin-top: 6px;
+    background: var(--orange);
+    color: #0d1117;
+    border:none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor:pointer;
+    font-size: 13px;
+  }
+  button.marcar:hover{ filter: brightness(1.08); }
+  button.marcar:disabled{
+    background: var(--border);
+    color: var(--text-dim);
+    cursor: not-allowed;
+  }
+  button.deshacer{
+    margin-top: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 12px;
+    cursor:pointer;
+    font-family:'Nunito', sans-serif;
+  }
+  button.deshacer:hover{ color: var(--text); border-color: var(--text-dim); }
+
+  .empty{
+    color: var(--text-dim);
+    font-size: 14px;
+    padding: 20px;
+    text-align:center;
+    border:1px dashed var(--border);
+    border-radius: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CRV <span>·</span> Préstamo de Bicicletas <span>· Caja Los Andes</span></h1>
+  <div class="status"><span class="dot"></span> <span id="status-text">Actualizando en vivo</span></div>
+</header>
+
+<div class="summary">
+  <div class="card activos">
+    <div class="num" id="count-activos">–</div>
+    <div class="label">Bicicletas prestadas (sin devolver)</div>
+  </div>
+  <div class="card devueltos">
+    <div class="num" id="count-devueltos">–</div>
+    <div class="label">Bicicletas devueltas</div>
+  </div>
+</div>
+
+<section>
+  <h2>Préstamos activos <span class="badge" id="badge-activos">0</span></h2>
+  <div class="grid" id="grid-activos"></div>
+</section>
+
+<section>
+  <h2>Bicicletas devueltas <span class="badge" id="badge-devueltos">0</span></h2>
+  <div class="grid" id="grid-devueltos"></div>
+</section>
+
+<script>
+  // ⚠️ Reemplazar por la URL del Web App publicado desde Apps Script
+  const SCRIPT_URL = "https://script.google.com/a/macros/ciclorecreovia.cl/s/AKfycbxKZ-Nlhnt4CHx0f_Yr5wKfHHEQmbc0JgTaX1VVaKnN7yloKbDRtKqIoxFnlMOTlpLLLg/exec";
+  const REFRESH_MS = 30000;
+
+  let jsonpCounter = 0;
+
+  function jsonpRequest(url) {
+    return new Promise((resolve, reject) => {
+      const callbackName = 'cb_' + (jsonpCounter++) + '_' + Date.now();
+      const script = document.createElement('script');
+      window[callbackName] = function (data) {
+        resolve(data);
+        delete window[callbackName];
+        script.remove();
+      };
+      script.onerror = () => {
+        reject(new Error('Error cargando datos'));
+        delete window[callbackName];
+        script.remove();
+      };
+      const sep = url.indexOf('?') === -1 ? '?' : '&';
+      script.src = url + sep + 'callback=' + callbackName;
+      document.body.appendChild(script);
+    });
+  }
+
+  function postAction(rowIndex, accion) {
+    return fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ rowIndex, accion })
+    }).then(r => r.json());
+  }
+
+  function crearTarjetaActiva(reg) {
+    const div = document.createElement('div');
+    div.className = 'record activo';
+    div.innerHTML = `
+      <span class="bici-tag">Bici #${reg.bicicleta || '—'}</span>
+      <div class="nombre">${reg.nombre || '(sin nombre)'}</div>
+      <div class="meta">
+        <div>RUT: <b>${reg.rut || '—'}</b></div>
+        <div>Casco entregado: <b>${reg.casco || '—'}</b></div>
+        <div>Hora de préstamo: <b>${reg.timestamp || '—'}</b></div>
+      </div>
+      <button class="marcar">Marcar como devuelta</button>
+    `;
+    const btn = div.querySelector('button.marcar');
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      postAction(reg.rowIndex, 'marcar_devuelta')
+        .then(() => cargarDatos())
+        .catch(() => {
+          btn.disabled = false;
+          btn.textContent = 'Marcar como devuelta';
+          alert('No se pudo guardar. Intenta de nuevo.');
+        });
+    });
+    return div;
+  }
+
+  function crearTarjetaDevuelta(reg) {
+    const div = document.createElement('div');
+    div.className = 'record devuelto';
+    div.innerHTML = `
+      <span class="bici-tag">Bici #${reg.bicicleta || '—'}</span>
+      <div class="nombre">${reg.nombre || '(sin nombre)'}</div>
+      <div class="meta">
+        <div>RUT: <b>${reg.rut || '—'}</b></div>
+        <div>Prestada: <b>${reg.timestamp || '—'}</b></div>
+        <div>Devuelta: <b>${reg.horaDevolucion || '—'}</b></div>
+      </div>
+      <button class="deshacer">Deshacer</button>
+    `;
+    const btn = div.querySelector('button.deshacer');
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      postAction(reg.rowIndex, 'deshacer_devolucion')
+        .then(() => cargarDatos())
+        .catch(() => {
+          btn.disabled = false;
+          alert('No se pudo deshacer. Intenta de nuevo.');
+        });
+    });
+    return div;
+  }
+
+  function render(registros) {
+    const gridActivos = document.getElementById('grid-activos');
+    const gridDevueltos = document.getElementById('grid-devueltos');
+    gridActivos.innerHTML = '';
+    gridDevueltos.innerHTML = '';
+
+    const activos = registros.filter(r => !r.devuelto);
+    const devueltos = registros.filter(r => r.devuelto);
+
+    document.getElementById('count-activos').textContent = activos.length;
+    document.getElementById('count-devueltos').textContent = devueltos.length;
+    document.getElementById('badge-activos').textContent = activos.length;
+    document.getElementById('badge-devueltos').textContent = devueltos.length;
+
+    if (activos.length === 0) {
+      gridActivos.innerHTML = '<div class="empty">No hay préstamos activos</div>';
+    } else {
+      activos.reverse().forEach(r => gridActivos.appendChild(crearTarjetaActiva(r)));
+    }
+
+    if (devueltos.length === 0) {
+      gridDevueltos.innerHTML = '<div class="empty">Aún no hay bicicletas devueltas</div>';
+    } else {
+      devueltos.reverse().forEach(r => gridDevueltos.appendChild(crearTarjetaDevuelta(r)));
+    }
+  }
+
+  function cargarDatos() {
+    document.getElementById('status-text').textContent = 'Actualizando...';
+    jsonpRequest(SCRIPT_URL)
+      .then(data => {
+        if (data.ok) {
+          render(data.registros);
+          document.getElementById('status-text').textContent =
+            'Actualizado ' + new Date().toLocaleTimeString('es-CL');
+        } else {
+          document.getElementById('status-text').textContent = 'Error al cargar datos';
+        }
+      })
+      .catch(() => {
+        document.getElementById('status-text').textContent = 'Error de conexión';
+      });
+  }
+
+  cargarDatos();
+  setInterval(cargarDatos, REFRESH_MS);
+</script>
+
+</body>
+</html>
